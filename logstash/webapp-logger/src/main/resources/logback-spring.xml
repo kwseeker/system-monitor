@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<configuration scan="true" scanPeriod="60 seconds" debug="true">
+
+    <!-- 定义日志文件的根目录 -->
+    <property name="LOG_HOME" value="logs"/>
+    <!--<property name="PATTERN" value="%d{yyyy-MM-dd HH:mm:ss} %-5level [%X{requestId}] [%thread%X{sourceThread}]%logger{24} - %msg%n"/>-->
+    <property name="PATTERN" value="%d{yyyy-MM-dd HH:mm:ss} %-5level [%thread]%logger{24} - %msg%n"/>
+
+    <!-- 日志输出到 Logstash -->
+    <!-- 采用tcp -->
+    <appender name="logstash" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+        <!-- logstash服务器地址和端口,支持尝试连接到多个目标(但是只发送给一个目标),只需要继续添加destination标签,或者多个地址以","分割 -->
+        <destination>localhost:8888</destination>
+        <!--<destination>localhost:8889</destination>-->
+        <!--<destination>localhost:8890</destination>-->
+        <!-- 提供了三种连接尝试策略,此处选择的策略是首要连接(preferPrimary),还有roundRobin,random -->
+        <connectionStrategy>
+            <preferPrimary>
+                <secondaryConnectionTTL>5 minutes</secondaryConnectionTTL>
+            </preferPrimary>
+        </connectionStrategy>
+        <!-- 如果所有目标都连接失败,则等待30秒后重新尝试连接,默认就是30s -->
+        <reconnectionDelay>30 second</reconnectionDelay>
+        <!-- 处理完后的数据先放缓冲,然后从缓冲中取数据传给logstash-input,默认8192Byte -->
+        <writeBufferSize>81920</writeBufferSize>
+        <!-- 值为0表示写缓冲禁用 -->
+        <!--<writeBufferSize>0</writeBufferSize>-->
+        <!-- 写超时时间,如果写超时,会启动重新连接,如果有启用writeBuffer里面的数据会在重连后丢失,如果需要避免丢失可以关闭写缓冲 -->
+        <writeTimeout>1 minute</writeTimeout>
+        <!-- 保持连接,如果事件频繁则保持连接,直到3分钟内没有新的事件来到才断开 -->
+        <keepAliveDuration>3 minutes</keepAliveDuration>
+        <!--输出的格式,推荐使用这个-->
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder" />
+        <!-- 此外还支持SSL连接, 使用JVM默认的keystore/truststore -->
+        <!--<ssl/>-->
+    </appender>
+
+    <!-- 后面使用logstash直接从日志文件中读取 -->
+    <appender name="file" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_HOME}/temp.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_HOME}/temporary/temp-%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+            <maxHistory>7</maxHistory>
+        </rollingPolicy>
+        <!-- 这里需要使用LogstashEncoder, 打印json格式日志 -->
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+    </appender>
+
+    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>${PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- logger默认会叠加root -->
+    <logger name="top.kwseeker.monitor.webapplogger" level="debug">
+        <!--<appender-ref ref="logstash"/>-->
+        <appender-ref ref="file"/>
+    </logger>
+
+    <root level="info">
+        <appender-ref ref="console"/>
+    </root>
+
+</configuration>
