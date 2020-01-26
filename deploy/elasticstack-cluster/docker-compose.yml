@@ -1,0 +1,90 @@
+version: '2.2'
+
+# 参考：https://www.elastic.co/guide/en/elastic-stack-get-started/7.5/get-started-docker.html
+# logstash
+# elasticsearch(3个节点)
+#   外部映射端口: 9201 9202 9203
+# elasticsearch-head
+# kibana
+
+services:
+
+  #logstash01
+
+  es01:
+    image: ${ES_IMAGE}
+    container_name: es01
+    # 不建议在environment中设置，最好在配置文件elasticsearch.yml中配置
+    environment:
+      #- node.name=es01
+      #- cluster.name=monitor-es-docker-cluster
+      #- discovery.seed_hosts=es02,es03
+      #- cluster.initial_master_nodes=es01,es02,es03
+      #- bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - ${ES01_CONFIG_PATH}:/usr/share/elasticsearch/config
+      - ${ES01_DATA_PATH}:/usr/share/elasticsearch/data
+      - ${ES01_LOGS_PATH}:/usr/share/elasticsearch/logs
+    ports:
+      - 9201:9200
+    #networks:
+      #- elastic
+
+  es02:
+    image: ${ES_IMAGE}
+    container_name: es02
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - ${ES02_CONFIG_PATH}:/usr/share/elasticsearch/config
+      - ${ES02_DATA_PATH}:/usr/share/elasticsearch/data
+      - ${ES02_LOGS_PATH}:/usr/share/elasticsearch/logs
+    ports:
+      - 9202:9200
+    #networks:
+      #- elastic
+
+  es03:
+    image: ${ES_IMAGE}
+    container_name: es03
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - ${ES03_CONFIG_PATH}:/usr/share/elasticsearch/config
+      - ${ES03_DATA_PATH}:/usr/share/elasticsearch/data
+      - ${ES03_LOGS_PATH}:/usr/share/elasticsearch/logs
+    ports:
+      - 9203:9200
+    #networks:
+      #- elastic
+
+  #elasticsearch-head
+
+
+  kib01:
+    image: kibana:7.5.1
+    container_name: kib01
+    ports:
+      - 5601:5601
+    environment:
+      ELASTICSEARCH_URL: http://es01:9200
+      ELASTICSEARCH_HOSTS: http://es01:9200
+    #networks:
+      #- elastic
+
+#networks:
+  #elastic:
+    #driver: bridge
