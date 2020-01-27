@@ -1,10 +1,11 @@
 cluster.name: monitor-es-docker-cluster
-node.name: es02
+# node.name: es01
 node.master: true
 node.data: true
 bootstrap.memory_lock: true
 #网络绑定，支持外网访问
-network.host: 0.0.0.0
+#network.host: 0.0.0.0
+network.host: 172.31.0.31
 http.port: 9200
 # 设置节点间交互的tcp端口,默认是9300
 transport.tcp.port: 9300
@@ -12,8 +13,8 @@ transport.tcp.port: 9300
 http.cors.enabled: true
 http.cors.allow-origin: "*"
 # 下面这两个鬼配置什么区别？配置文件中给出的配置是第一个，官方文档讲的是第二个
-# discovery.zen.ping.unicast.hosts: ["es01", "es03"]
-discovery.seed_hosts: es01,es03
+# discovery.zen.ping.unicast.hosts: ["es02", "es03"]
+# discovery.seed_hosts: es02,es03
 discovery.zen.minimum_master_nodes: 2
 # 启动时选举master候选节点
-cluster.initial_master_nodes: es01,es02,es03
+# cluster.initial_master_nodes: es01,es02,es03

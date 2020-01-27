@@ -1,25 +1,41 @@
 version: '2.2'
 
 # 参考：https://www.elastic.co/guide/en/elastic-stack-get-started/7.5/get-started-docker.html
+# 网络：elk-net（下面节点全部分配静态IP）
+#   172.31.0.1
 # logstash
+#
 # elasticsearch(3个节点)
 #   外部映射端口: 9201 9202 9203
 # elasticsearch-head
+#   外部映射端口: 9101
 # kibana
 
 services:
 
-  #logstash01
+#logstash
+#  lgs01:
+#    image: ${LOGSTASH_IMAGE}
+#    container_name: lgs01
+#    volumes:
+#      - ${LGS01_CONFIG_PATH}:/usr/share/logstash/config
+#    environment:
+#      - xpack.monitoring.elasticsearch.hosts=http://es01:9201,http://es02:9202,http://es03:9203
+#    ports:
+#      - 5045:5044
+#      - 9601:9600
+#      - 9011-9014:9011-9014
 
+  #elasticsearch
   es01:
     image: ${ES_IMAGE}
     container_name: es01
     # 不建议在environment中设置，最好在配置文件elasticsearch.yml中配置
     environment:
-      #- node.name=es01
+      - node.name=es01
       #- cluster.name=monitor-es-docker-cluster
-      #- discovery.seed_hosts=es02,es03
-      #- cluster.initial_master_nodes=es01,es02,es03
+      - discovery.seed_hosts=172.31.0.32,172.31.0.33
+      - cluster.initial_master_nodes=es01,es02,es03
       #- bootstrap.memory_lock=true
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
     ulimits:
@@ -32,13 +48,17 @@ services:
       - ${ES01_LOGS_PATH}:/usr/share/elasticsearch/logs
     ports:
       - 9201:9200
-    #networks:
-      #- elastic
+    networks:
+      elk-net:
+        ipv4_address: 172.31.0.31
 
   es02:
     image: ${ES_IMAGE}
     container_name: es02
     environment:
+      - node.name=es02
+      - discovery.seed_hosts=172.31.0.31,172.31.0.33
+      - cluster.initial_master_nodes=es01,es02,es03
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
     ulimits:
       memlock:
@@ -50,13 +70,17 @@ services:
       - ${ES02_LOGS_PATH}:/usr/share/elasticsearch/logs
     ports:
       - 9202:9200
-    #networks:
-      #- elastic
+    networks:
+      elk-net:
+        ipv4_address: 172.31.0.32
 
   es03:
     image: ${ES_IMAGE}
     container_name: es03
     environment:
+      - node.name=es03
+      - discovery.seed_hosts=172.31.0.31,172.31.0.32
+      - cluster.initial_master_nodes=es01,es02,es03
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
     ulimits:
       memlock:
@@ -68,11 +92,20 @@ services:
       - ${ES03_LOGS_PATH}:/usr/share/elasticsearch/logs
     ports:
       - 9203:9200
-    #networks:
-      #- elastic
+    networks:
+      elk-net:
+        ipv4_address: 172.31.0.33
 
   #elasticsearch-head
-
+  #注意es-head官方镜像(即 mobz/elasticsearch-head)有个bug(没有设置content-type: application/json)
+  es-head:
+    image: ${ES_HEAD_IMAGE}
+    container_name: es-head
+    ports:
+      - 9101:9100
+    networks:
+      elk-net:
+        ipv4_address: 172.31.0.34
 
   kib01:
     image: kibana:7.5.1
@@ -80,11 +113,16 @@ services:
     ports:
       - 5601:5601
     environment:
-      ELASTICSEARCH_URL: http://es01:9200
-      ELASTICSEARCH_HOSTS: http://es01:9200
-    #networks:
-      #- elastic
+      ELASTICSEARCH_URL: http://172.31.0.31:9201
+      ELASTICSEARCH_HOSTS: http://172.31.0.31:9201
+    networks:
+      elk-net:
+        ipv4_address: 172.31.0.41
 
-#networks:
-  #elastic:
-    #driver: bridge
+networks:
+  elk-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.31.0.0/16
+          gateway: 172.31.0.1
