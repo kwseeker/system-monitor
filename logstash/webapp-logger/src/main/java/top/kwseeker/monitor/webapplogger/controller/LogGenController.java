@@ -24,11 +24,11 @@ public class LogGenController {
             if(logType >> 3 == 1) {         //权重8
                 log.debug("Debug日志：logId={}", logId.getAndAdd(1));
             } else if (logType >> 2 == 1) { //权重4
-                log.debug("Info日志：logId={}", logId.getAndAdd(1));
+                log.info("Info日志：logId={}", logId.getAndAdd(1));
             } else if (logType >> 1 == 1) { //权重2
-                log.debug("Warn日志：logId={}", logId.getAndAdd(1));
+                log.warn("Warn日志：logId={}", logId.getAndAdd(1));
             } else {                        //权重2
-                log.debug("Error日志：logId={}", logId.getAndAdd(1));
+                log.error("Error日志：logId={}", logId.getAndAdd(1));
             }
         }
         return "done";

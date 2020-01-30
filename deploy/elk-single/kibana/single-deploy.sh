@@ -11,7 +11,12 @@ docker pull kibana:7.5.1
 #server.host: "0"
 #elasticsearch.hosts: [ "http://elasticsearch:9200" ]
 #xpack.monitoring.ui.container.elasticsearch.enabled: true
-docker run -di --link es-single:elasticsearch \
+#docker run -di --link es-single:elasticsearch \
+#    --name kibana-single \
+#    -v /home/lee/docker/kibana/config:/usr/share/kibana/config \
+#    -p 5601:5601 kibana:7.5.1
+
+docker run -di --network=host \
     --name kibana-single \
     -v /home/lee/docker/kibana/config:/usr/share/kibana/config \
-    -p 5601:5601 kibana:7.5.1
+    kibana:7.5.1

@@ -1,0 +1,10 @@
+#
+# ** THIS IS AN AUTO-GENERATED FILE **
+#
+
+# Default Kibana configuration for docker target
+#server.name: kibana
+server.name: kib01
+server.host: "0"
+elasticsearch.hosts: [ "http://172.31.0.31:9200","http://172.31.0.32:9200","http://172.31.0.33:9200" ]
+xpack.monitoring.ui.container.elasticsearch.enabled: true
