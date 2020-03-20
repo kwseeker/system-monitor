@@ -1,30 +1,34 @@
 version: '2.2'
 
 # 参考：https://www.elastic.co/guide/en/elastic-stack-get-started/7.5/get-started-docker.html
-# 网络：elk-net（下面节点全部分配静态IP）
-#   172.31.0.1
-# logstash
-#
-# elasticsearch(3个节点)
-#   外部映射端口: 9201 9202 9203
-# elasticsearch-head
+# 网络：elk-net（172.31.0.1，下面节点全部分配静态IP）
+# logstash（172.31.0.21）
+#   tcp input端口-映射宿主机端口：4561-4569:4561-4569
+# elasticsearch(3个节点，172.31.0.31，172.31.0.32，172.31.0.33)
+#   内部服务端口：9200
+#   映射宿主机端口: 9201 9202 9203
+# elasticsearch-head（172.31.0.34）
 #   外部映射端口: 9101
-# kibana
+# kibana（172.31.0.41）
+#   内部服务端口-映射宿主机端口：5601：5602
 
 services:
 
-#logstash
-#  lgs01:
-#    image: ${LOGSTASH_IMAGE}
-#    container_name: lgs01
-#    volumes:
-#      - ${LGS01_CONFIG_PATH}:/usr/share/logstash/config
-#    environment:
-#      - xpack.monitoring.elasticsearch.hosts=http://es01:9201,http://es02:9202,http://es03:9203
-#    ports:
-#      - 5045:5044
-#      - 9601:9600
-#      - 9011-9014:9011-9014
+  #logstash
+  lgs01:
+    image: ${LOGSTASH_IMAGE}
+    container_name: lgs01
+    volumes:
+      - ${LGS01_CONFIG_PATH}:/usr/share/logstash/config
+      - ${LGS01_PIPELINE_PATH}:/usr/share/logstash/pipeline
+    environment:
+      - xpack.monitoring.elasticsearch.hosts=http://172.31.0.31:9200,http://172.31.0.32:9202,http://172.31.0.33:9203
+    ports:
+      #预留作为input端口
+      - 4561-4569:4561-4569
+    networks:
+      elk-net:
+        ipv4_address: 172.31.0.21
 
   #elasticsearch
   es01:
@@ -111,10 +115,12 @@ services:
     image: kibana:7.5.1
     container_name: kib01
     ports:
-      - 5601:5601
-    environment:
-      ELASTICSEARCH_URL: http://172.31.0.31:9201
-      ELASTICSEARCH_HOSTS: http://172.31.0.31:9201
+      - 5602:5601
+    volumes:
+      - ${KIB01_CONFIG_PATH}:/usr/share/kibana/config
+#    environment:
+#      - SERVER_NAME=kib01
+#      - ELASTICSEARCH_HOSTS=http://172.31.0.31:9200
     networks:
       elk-net:
         ipv4_address: 172.31.0.41

@@ -6,11 +6,10 @@
 
 docker pull elasticsearch:7.5.1
 
-docker run -di -p 9200:9200 -p 9300:9300 \
+docker run -di \
     --name=es-single \
+    --network=host \
     -e "discovery.type=single-node" \
     -v /home/lee/docker/elasticsearch/plugins:/usr/share/elasticsearch/plugins \
     -v /home/lee/docker/elasticsearch/config:/usr/share/elasticsearch/config \
-    #数据目录
-
     elasticsearch:7.5.1

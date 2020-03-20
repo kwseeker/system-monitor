@@ -1,4 +1,4 @@
-cluster.name: "docker-cluster"
+cluster.name: "es-single-cluster"
 network.host: 0.0.0.0
 
 # 允许跨域访问

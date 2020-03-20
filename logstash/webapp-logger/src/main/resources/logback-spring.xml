@@ -11,7 +11,8 @@
     <!-- 采用tcp -->
     <appender name="logstash" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
         <!-- logstash服务器地址和端口,支持尝试连接到多个目标(但是只发送给一个目标),只需要继续添加destination标签,或者多个地址以","分割 -->
-        <destination>localhost:8888</destination>
+        <!--<destination>localhost:4560</destination>-->
+        <destination>localhost:4561</destination>
         <!--<destination>localhost:8889</destination>-->
         <!--<destination>localhost:8890</destination>-->
         <!-- 提供了三种连接尝试策略,此处选择的策略是首要连接(preferPrimary),还有roundRobin,random -->
@@ -55,7 +56,7 @@
 
     <!-- logger默认会叠加root -->
     <logger name="top.kwseeker.monitor.webapplogger" level="debug">
-        <!--<appender-ref ref="logstash"/>-->
+        <appender-ref ref="logstash"/>
         <appender-ref ref="file"/>
     </logger>
 
