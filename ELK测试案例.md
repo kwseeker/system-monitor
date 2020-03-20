@@ -1,10 +1,13 @@
 # ELK测试案例
 
 此案例模拟ELK监控web应用logback日志。
+假设集群已经搭建好，集群搭建参考《系统监控.md》。
 
-logback -> logstash-logback-encoder -> logstash -> elasticsearch -> kibana
+logback -> logstash-logback-encoder / filebeat -> logstash -> elasticsearch -> kibana
 
-> logstash-logback-encode: 主要是将logback日志编码为JSON格式  
+> logstash-logback-encode: 主要是将logback日志编码为JSON格式，然后发给logstash(将日志转码直接发给logstash)；  
+> filebeat，日志系统先将日志输出到日志文件，filebeat再从日志文件提取日志发送给logstash；
+> 
 > logstash:  
 >
 > > logstash-input-tcp: 通过tcp接收JSON数据  
@@ -22,6 +25,8 @@ logback -> logstash-logback-encoder -> logstash -> elasticsearch -> kibana
 ## logstash-logback-encoder
 
 [logstash-logback-encoder](https://github.com/logstash/logstash-logback-encoder)
+
+`LogstashTcpSocketAppender`通过logstash的tcp input插件，4560端口传输数据给logstash。
 
 ### 提供的logback Appender\编码器和布局
 
@@ -45,7 +50,7 @@ logback -> logstash-logback-encoder -> logstash -> elasticsearch -> kibana
     <configuration>
       <appender name="logstash" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
         <!-- logstash服务器地址和端口,支持尝试连接到多个目标(但是只发送给一个目标),只需要继续添加destination标签,或者多个地址以","分割 -->
-        <destination>localhost:8888</destination>
+        <destination>localhost:4560</destination>
         <!--<destination>localhost:8889</destination>-->
         <!--<destination>localhost:8890</destination>-->
         <!-- 提供了三种连接尝试策略,此处选择的策略是首要连接(preferPrimary),还有roundRobin,random -->
@@ -95,17 +100,6 @@ logback -> logstash-logback-encoder -> logstash -> elasticsearch -> kibana
     3) 如果logstash-logback-encoder缓冲区占满,新的日志数据会被丢弃;
     4) TCP Appender连接断开会自动重连,但是断开时数据会丢失.
 
-2) 配置logstash input插件
-
-    ```
-    input {
-        tcp {
-            port => 4560
-            codec => json_lines
-        }
-    }
-    ```
-
 ### 案例演示（LogstashEncoder）
 
 1) 配置logback.xml
@@ -120,4 +114,110 @@ logback -> logstash-logback-encoder -> logstash -> elasticsearch -> kibana
         <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
     </appender>
     ```
+
+## logstash
+
+需要配置input filters output。
+
+第1步操作将日志数据以“TCP”方式送到了Logstash服务器；
+Logstash需要接收数据，然后处理，再发给ES。
+
+TODO：拓展多种input格式、多logstash管道。
+
+### 接收数据：配置input插件
+
+配置input插件，第1步已经指定使用tcp input，4560端口。下面配置[tcp input](https://www.elastic.co/guide/en/logstash/current/plugins-inputs-tcp.html)。
+
+```
+input {
+    tcp {
+        id => "test_1"
+        port => 4560
+        #tcp_keep_alive => true
+        codec => json_lines
+        enable_metric => true
+        #tags => ["tagA", "tagB"]
+        #type => "test"
+    }
+}
+```
+
+json和jsonlines区别：  
+json文件格式的数据之间存在关联，切放在同一个列表当中，之间用逗号隔开，可以通过列表的下标进行获取。  
+而jsonlines文件格式的数据之间，是相互独立的，每一行即为一个json格式数据。
+
+### 数据处理：配置filter插件
+
+这里暂时没有需求使用filter插件。
+
+grok插件地作用是通过正则表达式对message信息作进一步分割和提取，并将提取地信息添加到新地filed里面。但是grok的频繁使用可能带来性能问题。
+
+比如：logstash.conf
+```
+input {stdin{}}
+filter {
+    grok {
+        match => {
+            "message" => "\s+(?<request_time>\d+(?:\.\d+)?)\s+"
+        }
+    }
+}
+output {stdout{codec => rubydebug}}
+```
+执行
+```
+$ sudo bin/logstash -f config/logstash.conf
+```
+输入“begin 123.456 end”；输出
+```
+{
+    "@version" => "1",
+    "host" => "Lee-Home",
+    "request_time" => "123.456",
+    "@timestamp" => 2020-01-30T05:06:41.560Z,
+    "message" => "begin 123.456 end"
+}
+```
+
+### 数据发送给ES：配置output插件
+
+```
+output {
+  if [type] == "test" {
+    elasticsearch {
+      hosts => ["http://172.31.0.31:9200","http://172.31.0.32:9200","http://172.31.0.33:9200"]
+      index => "elk-test-%{+YYYY.MM.dd}"
+    }
+  }
+}
+```
+
+TODO: elasticsearch output插件的实现原理：通过哪个接口将文档存入ES索引库的？
+
+## ElasticSearch
+
+需要考虑各种数据（结构化、非结构化）怎么存储到ES中，并转换为“索引-文档”的方式存储到索引库。
+
+9200端口API
+```shell
+#查看集群节点状态 
+GET /_cat/health?v
+#插入一个新的文档（ID为1）
+PUT /customer/_doc/1
+GET /customer/_doc/1
+#批量操作
+POST _bulk
+#查询
+GET /bank/_search
+#规划节点
+PUT /<name_of_index>
+```
+
+
+
+## Kibana
+
+需要考虑如何连接到ES，匹配获取指定的索引库数据。
+
+### 创建索引模式
 
