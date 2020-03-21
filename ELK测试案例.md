@@ -219,5 +219,54 @@ PUT /<name_of_index>
 
 需要考虑如何连接到ES，匹配获取指定的索引库数据。
 
-### 创建索引模式
+### 创建索引模式并查询
+ 
+进入到`Management`标签页, 打开`Index Patterns`, Kibana会提示如何创建索引pattern.
+
+这里以我们测试案例说明:
+
+1. 输入想要查看的logstash抓取的日志文档的索引库名通配符,`elk-test-*`;  
+
+2. 配置`settings`(这一步用于配置过滤字段); 首先查询看下索引库我们有哪些索引字段; 然后可以选择配置@timestamp时间过滤器和index ID pattern.  
+  (注意:使用的官方docker镜像创建索引只有一个分片两个副本; es-head好像工作不正常,需要确认下是否是版本问题导致的)
+  
+    查询语句:
+    ```
+    curl -X GET "localhost:9201/_search?pretty" -H 'Content-Type: application/json' -d'
+    {
+        "query": {
+            "match": {
+                "_index": "elk-test-2020.03.21"
+            }
+        }
+    }
+    ```
+    文档结构:
+    ```
+    {
+      "_index" : "elk-test-2020.03.21",
+      "_type" : "_doc",
+      "_id" : "Er5A-3ABXnXSEgR9ZgZo",
+      "_score" : 1.0,
+      "_source" : {
+        "level" : "DEBUG",
+        "@timestamp" : "2020-03-21T04:01:06.439Z",
+        "@version" : "1",
+        "message" : "Debug日志：logId=60",
+        "logger_name" : "top.kwseeker.monitor.webapplogger.controller.LogGenController",
+        "port" : 48418,
+        "level_value" : 10000,
+        "host" : "gateway",
+        "thread_name" : "http-nio-8080-exec-2",
+        "type" : "test"
+      }
+    }
+    ```
+
+3. 打开`Discover`, 可以选择查阅字段, 然后在上面输入框可以做字段值匹配(这里用的ES-7.5.1, 公司用的是6.x.x,对比还是7好用,有提示功能).
+
+    elk测试效果:
+    ![](./imgs/elk测试效果.png)
+
+### 可视化
 
