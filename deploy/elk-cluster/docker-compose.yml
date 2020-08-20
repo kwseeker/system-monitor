@@ -111,6 +111,17 @@ services:
       elk-net:
         ipv4_address: 172.31.0.34
 
+  #docker run -p 9200:9200 -d --name elasticsearch elasticsearch
+  #docker run -p 9800:9800 -d --link elasticsearch:demo containerize/elastichd
+  es-hd:
+    image: ${ES_HD_IMAGE}
+    container_name: es-hd
+    ports:
+    - 9800:9800
+    networks:
+      elk-net:
+        ipv4_address: 172.31.0.35
+
   kib01:
     image: kibana:7.5.1
     container_name: kib01

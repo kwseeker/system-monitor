@@ -54,6 +54,7 @@ function container_up() {
     # 1 使用docker-compose启动docker集群
     echo ">>>>>>> elk docker cluster start ..."
     docker-compose up -d
+    #docker-compose up --no-recreate -d
     echo ">>>>>>> elk docker cluster start done"
 }
 
