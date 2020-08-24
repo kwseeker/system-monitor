@@ -32,23 +32,24 @@ logback -> logstash-logback-encoder / filebeat -> logstash -> elasticsearch -> k
 
 其中编码器和布局可以用在Logback原有的Appender里面，Github上的官方文档都提供了使用方法．
 
-| Format        | Protocol   | Function | LoggingEvent | AccessEvent
-|---------------|------------|----------| ------------ | -----------
-| Logstash JSON | Syslog/UDP | Appender | [`LogstashUdpSocketAppender`](/src/main/java/net/logstash/logback/appender/LogstashUdpSocketAppender.java) | [`LogstashAccessUdpSocketAppender`](/src/main/java/net/logstash/logback/appender/LogstashAccessUdpSocketAppender.java)
-| Logstash JSON | TCP        | Appender | [`LogstashTcpSocketAppender`](/src/main/java/net/logstash/logback/appender/LogstashTcpSocketAppender.java) | [`LogstashAccessTcpSocketAppender`](/src/main/java/net/logstash/logback/appender/LogstashAccessTcpSocketAppender.java)
-| any           | any        | Appender | [`LoggingEventAsyncDisruptorAppender`](/src/main/java/net/logstash/logback/appender/LoggingEventAsyncDisruptorAppender.java) | [`AccessEventAsyncDisruptorAppender`](/src/main/java/net/logstash/logback/appender/AccessEventAsyncDisruptorAppender.java)
-| Logstash JSON | any        | Encoder  | [`LogstashEncoder`](/src/main/java/net/logstash/logback/encoder/LogstashEncoder.java) | [`LogstashAccessEncoder`](/src/main/java/net/logstash/logback/encoder/LogstashAccessEncoder.java)
-| Logstash JSON | any        | Layout   | [`LogstashLayout`](/src/main/java/net/logstash/logback/layout/LogstashLayout.java) | [`LogstashAccessLayout`](/src/main/java/net/logstash/logback/layout/LogstashAccessLayout.java)
-| General JSON  | any        | Encoder  | [`LoggingEventCompositeJsonEncoder`](/src/main/java/net/logstash/logback/encoder/LoggingEventCompositeJsonEncoder.java) | [`AccessEventCompositeJsonEncoder`](/src/main/java/net/logstash/logback/encoder/AccessEventCompositeJsonEncoder.java)
-| General JSON  | any        | Layout   | [`LoggingEventCompositeJsonLayout`](/src/main/java/net/logstash/logback/layout/LoggingEventCompositeJsonLayout.java) | [`AccessEventCompositeJsonLayout`](/src/main/java/net/logstash/logback/encoder/AccessEventCompositeJsonLayout.java)
+| Format        | Protocol   | Function | LoggingEvent | AccessEvent |
+|---------------|------------|----------| ------------ | ----------- |
+| Logstash JSON | Syslog/UDP | Appender | [`LogstashUdpSocketAppender`](/src/main/java/net/logstash/logback/appender/LogstashUdpSocketAppender.java) | [`LogstashAccessUdpSocketAppender`](/src/main/java/net/logstash/logback/appender/LogstashAccessUdpSocketAppender.java) |
+| Logstash JSON | TCP        | Appender | [`LogstashTcpSocketAppender`](/src/main/java/net/logstash/logback/appender/LogstashTcpSocketAppender.java) | [`LogstashAccessTcpSocketAppender`](/src/main/java/net/logstash/logback/appender/LogstashAccessTcpSocketAppender.java) |
+| any           | any        | Appender | [`LoggingEventAsyncDisruptorAppender`](/src/main/java/net/logstash/logback/appender/LoggingEventAsyncDisruptorAppender.java) | [`AccessEventAsyncDisruptorAppender`](/src/main/java/net/logstash/logback/appender/AccessEventAsyncDisruptorAppender.java) |
+| Logstash JSON | any        | Encoder  | [`LogstashEncoder`](/src/main/java/net/logstash/logback/encoder/LogstashEncoder.java) | [`LogstashAccessEncoder`](/src/main/java/net/logstash/logback/encoder/LogstashAccessEncoder.java) |
+| Logstash JSON | any        | Layout   | [`LogstashLayout`](/src/main/java/net/logstash/logback/layout/LogstashLayout.java) | [`LogstashAccessLayout`](/src/main/java/net/logstash/logback/layout/LogstashAccessLayout.java) |
+| General JSON  | any        | Encoder  | [`LoggingEventCompositeJsonEncoder`](/src/main/java/net/logstash/logback/encoder/LoggingEventCompositeJsonEncoder.java) | [`AccessEventCompositeJsonEncoder`](/src/main/java/net/logstash/logback/encoder/AccessEventCompositeJsonEncoder.java) |
+| General JSON  | any        | Layout   | [`LoggingEventCompositeJsonLayout`](/src/main/java/net/logstash/logback/layout/LoggingEventCompositeJsonLayout.java) | [`AccessEventCompositeJsonLayout`](/src/main/java/net/logstash/logback/encoder/AccessEventCompositeJsonLayout.java) |
 
 ### 案例演示（LogstashTcpSocketAppender）
 
 1) 配置logback.xml
-    ```xml
-    <?xml version="1.0" encoding="UTF-8"?>
-    <configuration>
-      <appender name="logstash" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <appender name="logstash" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
         <!-- logstash服务器地址和端口,支持尝试连接到多个目标(但是只发送给一个目标),只需要继续添加destination标签,或者多个地址以","分割 -->
         <destination>localhost:4560</destination>
         <!--<destination>localhost:8889</destination>-->
@@ -74,50 +75,49 @@ logback -> logstash-logback-encoder / filebeat -> logstash -> elasticsearch -> k
         <!-- 此外还支持SSL连接, 使用JVM默认的keystore/truststore -->
         <!--<ssl/>-->
     </appender>
+    <root level="DEBUG">
+        <appender-ref ref="stash" />
+    </root>
+</configuration>
+```
+通过LogstashEncoder编码后的日志格式
+```json
+{
+    "@timestamp":"2020-01-20T17:11:32.933+08:00",
+    "@version":"1",
+    "message":"Warn日志：logId=1000",
+    "logger_name":"top.kwseeker.monitor.webapplogger.controller.LogGenController",
+    "thread_name":"http-nio-8080-exec-1",
+    "level":"DEBUG",
+    "level_value":10000
+}
+```
 
-      <root level="DEBUG">
-          <appender-ref ref="stash" />
-      </root>
-    </configuration>
-    ```
-    
-    通过LogstashEncoder编码后的日志格式
-    ```json
-    {
-        "@timestamp":"2020-01-20T17:11:32.933+08:00",
-        "@version":"1",
-        "message":"Warn日志：logId=1000",
-        "logger_name":"top.kwseeker.monitor.webapplogger.controller.LogGenController",
-        "thread_name":"http-nio-8080-exec-1",
-        "level":"DEBUG",
-        "level_value":10000
-    }
-    ```
-
-    注意事项:  
-    1) TCP Appender必须配置编码器;
-    2) TCP Appender是异步的,永远不会阻塞logback日志线程;
-    3) 如果logstash-logback-encoder缓冲区占满,新的日志数据会被丢弃;
-    4) TCP Appender连接断开会自动重连,但是断开时数据会丢失.
+注意事项:  
+1) TCP Appender必须配置编码器;
+2) TCP Appender是异步的,永远不会阻塞logback日志线程;
+3) 如果logstash-logback-encoder缓冲区占满,新的日志数据会被丢弃;
+4) TCP Appender连接断开会自动重连,但是断开时数据会丢失.
 
 ### 案例演示（LogstashEncoder）
 
 1) 配置logback.xml
-    ```xml
-    <appender name="file" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${LOG_HOME}/temp.log</file>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${LOG_HOME}/temporary/temp-%d{yyyy-MM-dd}.log.gz</fileNamePattern>
-            <maxHistory>7</maxHistory>
-        </rollingPolicy>
-        <!-- 这里需要使用LogstashEncoder -->
-        <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
-    </appender>
-    ```
+
+```xml
+<appender name="file" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${LOG_HOME}/temp.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+    <fileNamePattern>${LOG_HOME}/temporary/temp-%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+    <maxHistory>7</maxHistory>
+    </rollingPolicy>
+    <!-- 这里需要使用LogstashEncoder -->
+    <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+</appender>
+```
 
 ## logstash
 
-需要配置input filters output。
+**需要配置input filters output**。
 
 第1步操作将日志数据以“TCP”方式送到了Logstash服务器；
 Logstash需要接收数据，然后处理，再发给ES。
@@ -218,55 +218,3 @@ PUT /<name_of_index>
 ## Kibana
 
 需要考虑如何连接到ES，匹配获取指定的索引库数据。
-
-### 创建索引模式并查询
- 
-进入到`Management`标签页, 打开`Index Patterns`, Kibana会提示如何创建索引pattern.
-
-这里以我们测试案例说明:
-
-1. 输入想要查看的logstash抓取的日志文档的索引库名通配符,`elk-test-*`;  
-
-2. 配置`settings`(这一步用于配置过滤字段); 首先查询看下索引库我们有哪些索引字段; 然后可以选择配置@timestamp时间过滤器和index ID pattern.  
-  (注意:使用的官方docker镜像创建索引只有一个分片两个副本; es-head好像工作不正常,需要确认下是否是版本问题导致的)
-  
-    查询语句:
-    ```
-    curl -X GET "localhost:9201/_search?pretty" -H 'Content-Type: application/json' -d'
-    {
-        "query": {
-            "match": {
-                "_index": "elk-test-2020.03.21"
-            }
-        }
-    }
-    ```
-    文档结构:
-    ```
-    {
-      "_index" : "elk-test-2020.03.21",
-      "_type" : "_doc",
-      "_id" : "Er5A-3ABXnXSEgR9ZgZo",
-      "_score" : 1.0,
-      "_source" : {
-        "level" : "DEBUG",
-        "@timestamp" : "2020-03-21T04:01:06.439Z",
-        "@version" : "1",
-        "message" : "Debug日志：logId=60",
-        "logger_name" : "top.kwseeker.monitor.webapplogger.controller.LogGenController",
-        "port" : 48418,
-        "level_value" : 10000,
-        "host" : "gateway",
-        "thread_name" : "http-nio-8080-exec-2",
-        "type" : "test"
-      }
-    }
-    ```
-
-3. 打开`Discover`, 可以选择查阅字段, 然后在上面输入框可以做字段值匹配(这里用的ES-7.5.1, 公司用的是6.x.x,对比还是7好用,有提示功能).
-
-    elk测试效果:
-    ![](./imgs/elk测试效果.png)
-
-### 可视化
-
